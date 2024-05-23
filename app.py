@@ -1,74 +1,72 @@
-from flask import Flask, url_for, render_template, redirect, flash, jsonify
-from flask_debugtoolbar import DebugToolbarExtension
-from models import db, connect_db, Pet
+from flask import Flask, request, jsonify, abort, render_template
+from models import db, connect_db, Cupcake
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///adopt'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///cupcakes'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = "secretkey"
-app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+app.config['SECRET_KEY'] = 'secretkey'
 
 connect_db(app)
-db.create_all()
 
-toolbar = DebugToolbarExtension(app)
+@app.route('/')
+def home():
+    """Home page"""
+    return render_template('index.html')
 
-@app.route("/")
-def list_pets():
-    """List all pets."""
+@app.route('/api/cupcakes')
+def list_cupcakes():
+    """List all cupcakes"""
+    cupcakes = Cupcake.query.all()
+    serialized = [cupcake.serialize() for cupcake in cupcakes]
+    return jsonify(cupcakes = serialized)
 
-    pets = Pet.query.all()
-    return render_template("pet_list.html", pets=pets)
+@app.route('/api/cupcakes/<int:cupcake_id>')
+def get_cupcake(cupcake_id):
+    """Get a single cupcake"""
+    cupcake = Cupcake.query.get_or_404(cupcake_id)
+    return jsonify(cupcake = cupcake.serialize())
 
+@app.route('/api/cupcakes', methods=['POST'])
+def create_cupcake():
+    """Create a cupcake"""
+    data = request.json
 
-@app.route("/add", methods=["GET", "POST"])
-def add_pet():
-    """Add a pet."""
+    new_cupcake = Cupcake(
+        flavor = data.get('flavor'),
+        size = data.get('size'),
+        rating = data.get('rating'),
+        image = data.get('image', DEFAULT_IMAGE_URL)
+    )
 
-    form = AddPetForm()
+    db.session.add(new_cupcake)
+    db.session.commit()
 
-    if form.validate_on_submit():
-        data = {k: v for k, v in form.data.items() if k != "csrf_token"}
-        new_pet = Pet(**data)
-        # new_pet = Pet(name=form.name.data, age=form.age.data, ...)
-        db.session.add(new_pet)
-        db.session.commit()
-        flash(f"{new_pet.name} added.")
-        return redirect(url_for('list_pets'))
+    return (jsonify(cupcake = new_cupcake.serialize()), 201)
 
-    else:
-        # re-present form for editing
-        return render_template("pet_add_form.html", form=form)
+@app.route('/api/cupcakes/<int:cupcake_id>', methods=['PATCH'])
+def update_cupcake(cupcake_id):
+    """Update a cupcake"""
+    cupcake = Cupcake.query.get_or_404(cupcake_id)
+    data = request.json
 
+    cupcake.flavor = data.get('flavor', cupcake.flavor)
+    cupcake.size = data.get('size', cupcake.size)
+    cupcake.rating = data.get('rating', cupcake.rating)
+    cupcake.image = data.get('image', cupcake.image)
 
-@app.route("/<int:pet_id>", methods=["GET", "POST"])
-def edit_pet(pet_id):
-    """Edit pet."""
+    db.session.commit()
 
-    pet = Pet.query.get_or_404(pet_id)
-    form = EditPetForm(obj=pet)
+    return jsonify(cupcake=cupcake.serialize())
 
-    if form.validate_on_submit():
-        pet.notes = form.notes.data
-        pet.available = form.available.data
-        pet.photo_url = form.photo_url.data
-        db.session.commit()
-        flash(f"{pet.name} updated.")
-        return redirect(url_for('list_pets'))
+@app.route('/api/cupcakes/<int:cupcake_id>', methods=['DELETE'])
+def delete_cupcake(cupcake_id):
+    """Delete a cupcake"""
+    cupcake = Cupcake.query.get_or_404(cupcake_id)
 
-    else:
-        # failed; re-present form for editing
-        return render_template("pet_edit_form.html", form=form, pet=pet)
+    db.session.delete(cupcake)
+    db.session.commit()
 
+    return jsonify(message="Deleted")
 
-@app.route("/api/pets/<int:pet_id>", methods=['GET'])
-def api_get_pet(pet_id):
-    """Return basic info about pet in JSON."""
-
-    pet = Pet.query.get_or_404(pet_id)
-    info = {"name": pet.name, "age": pet.age}
-
-    return jsonify(info)
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)

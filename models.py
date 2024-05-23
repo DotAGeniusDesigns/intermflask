@@ -1,23 +1,18 @@
 from flask_sqlalchemy import SQLAlchemy
 
-GENERIC_IMAGE = "https://mylostpetalert.com/wp-content/themes/mlpa-child/images/nophoto.gif"
-
 db = SQLAlchemy()
 
-class Pet(db.Model):
-    __tablename__ = 'pets'
+DEFAULT_IMAGE_URL = ""
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.Text, nullable=False)
-    species = db.Column(db.Text, nullable=False)
-    photo_url = db.Column(db.Text, nullable=True)
-    age = db.Column(db.Integer, nullable=True)
-    notes = db.Column(db.Text, nullable=True)
-    available = db.Column(db.Boolean, nullable=False, default=True)
+class Cupcake(db.Model):
+    __tablename__ = 'cupcakes'
 
-    def image_url(self):
-        return self.photo_url or GENERIC_IMAGE
-    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    flavor = db.Column(db.Text, nullable=False)
+    size = db.Column(db.Text, nullable=False)
+    rating = db.Column(db.Float, nullable=False)
+    image = db.Column(db.Text, nullable=False, default=DEFAULT_IMAGE_URL)
+
 def connect_db(app):
     db.app = app
     db.init_app(app)
