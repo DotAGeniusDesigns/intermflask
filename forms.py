@@ -1,50 +1,18 @@
-"""Forms for adopt app."""
-
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, SelectField, TextAreaField, BooleanField
-from wtforms.validators import InputRequired, Length, NumberRange, URL, Optional
+from wtforms import StringField, PasswordField, TextAreaField
+from wtforms.validators import InputRequired, Length, Email
 
+class RegisterForm(FlaskForm):
+    username = StringField("Username", validators=[InputRequired(), Length(max=20)])
+    password = PasswordField("Password", validators=[InputRequired()])
+    email = StringField("Email", validators=[InputRequired(), Email(), Length(max=50)])
+    first_name = StringField("First Name", validators=[InputRequired(), Length(max=30)])
+    last_name = StringField("Last Name", validators=[InputRequired(), Length(max=30)])
 
-class AddPetForm(FlaskForm):
-    """Form for adding pets."""
+class LoginForm(FlaskForm):
+    username = StringField("Username", validators=[InputRequired()])
+    password = PasswordField("Password", validators=[InputRequired()])
 
-    name = StringField(
-        "Pet Name",
-        validators=[InputRequired()],
-    )
-
-    species = SelectField(
-        "Species",
-        choices=[("cat", "Cat"), ("dog", "Dog"), ("porcupine", "Porcupine")],
-    )
-
-    photo_url = StringField(
-        "Photo URL",
-        validators=[Optional(), URL()],
-    )
-
-    age = IntegerField(
-        "Age",
-        validators=[Optional(), NumberRange(min=0, max=30)],
-    )
-
-    notes = TextAreaField(
-        "Comments",
-        validators=[Optional(), Length(min=10)],
-    )
-
-
-class EditPetForm(FlaskForm):
-    """Form for editing an existing pet."""
-
-    photo_url = StringField(
-        "Photo URL",
-        validators=[Optional(), URL()],
-    )
-
-    notes = TextAreaField(
-        "Comments",
-        validators=[Optional(), Length(min=10)],
-    )
-
-    available = BooleanField("Available?")
+class FeedbackForm(FlaskForm):
+    title = StringField("Title", validators=[InputRequired(), Length(max=100)])
+    content = TextAreaField("Content", validators=[InputRequired()])
